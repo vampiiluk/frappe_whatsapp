@@ -6,31 +6,56 @@
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
- "field_order": [
-  "template_name",
-  "actual_name",
-  "column_break_bthp",
-  "status",
-  "id",
-  "section_break_fxqh",
-  "template",
-  "sample_values",
-  "for_doctype",
-  "field_names",
-  "column_break_6",
-  "category",
-  "language",
-  "language_code",
-  "whatsapp_account",
-  "section_break_lupb",
-  "header_type",
-  "header",
-  "sample",
-  "column_break_tbvf",
-  "footer",
-  "section_break_wu2vp",
-  "buttons"
- ],
+  "field_order": [
+   "section_break_common",
+   "template_type",
+   "template_name",
+   "column_break_bthp",
+   "status",
+   "whatsapp_account",
+   "template",
+   "sample_values",
+   "for_doctype",
+   "field_names",
+   "field_names_preview",
+   "build_field_names",
+   "section_break_meta",
+   "actual_name",
+   "id",
+   "column_break_6",
+   "category",
+   "language",
+   "language_code",
+   "header_type",
+   "header",
+   "sample",
+   "column_break_tbvf",
+   "footer",
+   "buttons",
+   "section_break_interactive",
+   "evo_enable_buttons",
+   "evo_enable_list",
+   "evo_enable_carousel",
+   "section_break_evo_buttons",
+   "evo_buttons_title",
+   "evo_buttons_body",
+   "evo_buttons_footer",
+   "evo_buttons",
+   "section_break_evo_list",
+   "evo_list_title",
+   "evo_list_body",
+   "evo_list_footer",
+   "evo_button_text",
+   "evo_sections",
+   "evo_section_rows",
+   "section_break_evo_carousel",
+   "evo_carousel_title",
+   "evo_carousel_body",
+   "evo_carousel_footer",
+   "evo_cards",
+   "build_payload",
+   "template_payload"
+  ],
  "fields": [
   {
    "fieldname": "template_name",
@@ -39,35 +64,38 @@
    "reqd": 1,
    "unique": 1
   },
+   {
+    "depends_on": "eval:doc.template_type != 'Revolution'",
+    "fieldname": "template",
+    "fieldtype": "Code",
+    "in_list_view": 1,
+    "label": "Template",
+    "options": "HTML",
+    "reqd": 1
+   },
   {
-   "fieldname": "template",
-   "fieldtype": "Code",
-   "in_list_view": 1,
-   "label": "Template",
-   "options": "HTML",
-   "reqd": 1
-  },
-  {
+   "depends_on": "eval:doc.template_type != 'Revolution'",
    "fieldname": "language",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Language",
-   "options": "Language",
-   "reqd": 1
+   "options": "Language"
   },
   {
+   "depends_on": "eval:doc.template_type != 'Revolution'",
    "fieldname": "language_code",
    "fieldtype": "Data",
    "label": "Language Code",
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.header_type == 'TEXT'",
+   "depends_on": "eval:doc.template_type != 'Revolution' && doc.header_type == 'TEXT'",
    "fieldname": "header",
    "fieldtype": "Data",
    "label": "Header"
   },
   {
+   "depends_on": "eval:doc.template_type != 'Revolution'",
    "fieldname": "footer",
    "fieldtype": "Data",
    "label": "Footer"
@@ -77,14 +105,15 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.template_type != 'Revolution'",
    "description": "For V16 use UTILITY and AUTHENTICATION in place of TRANSACTIONAL and OTP",
    "fieldname": "category",
    "fieldtype": "Select",
    "label": "Category",
-   "options": "\nTRANSACTIONAL\nMARKETING\nOTP\nUTILITY\nAUTHENTICATION",
-   "reqd": 1
+   "options": "\nTRANSACTIONAL\nMARKETING\nOTP\nUTILITY\nAUTHENTICATION"
   },
   {
+   "depends_on": "eval:doc.template_type != 'Revolution'",
    "fieldname": "id",
    "fieldtype": "Data",
    "label": "ID",
@@ -100,13 +129,14 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.template_type != 'Revolution'",
    "fieldname": "header_type",
    "fieldtype": "Select",
    "label": "Header Type",
    "options": "\nTEXT\nDOCUMENT\nIMAGE"
   },
   {
-   "depends_on": "eval:doc.header_type",
+   "depends_on": "eval:doc.template_type != 'Revolution' && doc.header_type",
    "fieldname": "sample",
    "fieldtype": "Attach",
    "label": "Sample"
@@ -121,10 +151,12 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "section_break_fxqh",
-   "fieldtype": "Section Break"
+   "fieldname": "section_break_common",
+   "fieldtype": "Section Break",
+   "label": "Template Details"
   },
   {
+   "depends_on": "eval:doc.template_type != 'Revolution'",
    "fieldname": "actual_name",
    "fieldtype": "Data",
    "label": "Template Name",
@@ -137,31 +169,196 @@
    "options": "DocType"
   },
   {
-   "fieldname": "section_break_lupb",
-   "fieldtype": "Section Break"
+   "depends_on": "eval:doc.template_type != 'Revolution'",
+   "fieldname": "section_break_meta",
+   "fieldtype": "Section Break",
+   "label": "Meta Template"
   },
   {
    "fieldname": "column_break_tbvf",
    "fieldtype": "Column Break"
   },
+   {
+    "description": "One field path per line (comma-separated also works). Each line becomes {{1}}, {{2}}... in the payload. Examples: deal_owner, products[0].rate, products[item_code=ABC-1].rate, Item Price[item_code={item_code}, price_list=Standard Buying].price_list_rate, sum(products[].rate), count(products[]), =Fixed Value",
+    "fieldname": "field_names",
+    "fieldtype": "Code",
+    "label": "Field names",
+    "max_height": "240px",
+    "min_height": "140px"
+   },
+   {
+    "fieldname": "field_names_preview",
+    "fieldtype": "HTML"
+   },
+   {
+    "fieldname": "build_field_names",
+    "fieldtype": "Button",
+    "label": "Build Field Names"
+   },
   {
-   "description": "Field names to replace the value in templates",
-   "fieldname": "field_names",
-   "fieldtype": "Small Text",
-   "label": "Field names"
-  },
-  {
+   "depends_on": "eval:doc.template_type != 'Revolution'",
    "fieldname": "buttons",
    "fieldtype": "Table",
    "label": "Buttons",
    "options": "WhatsApp Button"
   },
   {
-   "fieldname": "section_break_wu2vp",
-   "fieldtype": "Section Break"
- },
- {
-  "fieldname": "whatsapp_account",
+   "depends_on": "eval:doc.template_type == 'Revolution'",
+   "fieldname": "section_break_interactive",
+   "fieldtype": "Section Break",
+   "label": "Evolution Template Builder"
+  },
+   {
+    "depends_on": "eval:doc.template_type == 'Revolution'",
+    "fieldname": "evo_enable_buttons",
+    "fieldtype": "Check",
+    "label": "Send Buttons",
+    "default": 1
+   },
+   {
+    "depends_on": "eval:doc.template_type == 'Revolution'",
+    "fieldname": "evo_enable_list",
+    "fieldtype": "Check",
+    "label": "Send List"
+   },
+   {
+    "depends_on": "eval:doc.template_type == 'Revolution'",
+    "fieldname": "evo_enable_carousel",
+    "fieldtype": "Check",
+    "label": "Send Carousel"
+   },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_buttons",
+   "fieldname": "section_break_evo_buttons",
+   "fieldtype": "Section Break",
+   "label": "Buttons Component"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_buttons",
+   "fieldname": "evo_buttons_title",
+   "fieldtype": "Data",
+   "label": "Buttons Title"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_buttons",
+   "fieldname": "evo_buttons_body",
+   "fieldtype": "Text",
+   "label": "Buttons Description"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_buttons",
+   "fieldname": "evo_buttons_footer",
+   "fieldtype": "Data",
+   "label": "Buttons Footer"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_buttons",
+   "fieldname": "evo_buttons",
+   "fieldtype": "Table",
+   "label": "Buttons",
+   "options": "WhatsApp Evo Button"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_list",
+   "fieldname": "section_break_evo_list",
+   "fieldtype": "Section Break",
+   "label": "List Component"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_list",
+   "fieldname": "evo_list_title",
+   "fieldtype": "Data",
+   "label": "List Title"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_list",
+   "fieldname": "evo_list_body",
+   "fieldtype": "Text",
+   "label": "List Description"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_list",
+   "fieldname": "evo_list_footer",
+   "fieldtype": "Data",
+   "label": "List Footer"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_list",
+   "fieldname": "evo_button_text",
+   "fieldtype": "Data",
+   "label": "List Button Text"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_list",
+   "fieldname": "evo_sections",
+   "fieldtype": "Table",
+   "label": "Sections",
+   "options": "WhatsApp Evo Section"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_list",
+   "description": "List rows grouped by section title",
+   "fieldname": "evo_section_rows",
+   "fieldtype": "Table",
+   "label": "Rows",
+   "options": "WhatsApp Evo Section Row"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_carousel",
+   "fieldname": "section_break_evo_carousel",
+   "fieldtype": "Section Break",
+   "label": "Carousel Component"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_carousel",
+   "fieldname": "evo_carousel_title",
+   "fieldtype": "Data",
+   "label": "Carousel Title"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_carousel",
+   "fieldname": "evo_carousel_body",
+   "fieldtype": "Text",
+   "label": "Carousel Body"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_carousel",
+   "fieldname": "evo_carousel_footer",
+   "fieldtype": "Data",
+   "label": "Carousel Footer"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution' && doc.evo_enable_carousel",
+   "fieldname": "evo_cards",
+   "fieldtype": "Table",
+   "label": "Cards",
+   "options": "WhatsApp Evo Card"
+  },
+   {
+    "depends_on": "eval:doc.template_type == 'Revolution'",
+   "fieldname": "build_payload",
+   "fieldtype": "Button",
+   "label": "Build Template Payload"
+  },
+  {
+   "depends_on": "eval:doc.template_type == 'Revolution'",
+   "description": "Generated JSON sent to the Evolution API. Use the Build button or edit manually.",
+   "fieldname": "template_payload",
+   "fieldtype": "JSON",
+   "label": "Template Payload"
+  },
+   {
+    "fieldname": "template_type",
+    "fieldtype": "Select",
+    "label": "Template Type",
+    "options": "\nMeta\nRevolution",
+    "default": "Revolution"
+   },
+  {
+   "fieldname": "whatsapp_account",
    "fieldtype": "Link",
    "label": "WhatsApp Account",
    "options": "WhatsApp Account"
@@ -170,7 +367,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-03 20:39:48.979892",
+ "modified": "2026-08-05 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Frappe Whatsapp",
  "name": "WhatsApp Templates",
@@ -185,9 +382,9 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
    "share": 1,
-   "write": 1
+   "write": 1,
+   "role": "System Manager"
   }
  ],
  "row_format": "Dynamic",

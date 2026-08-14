@@ -3,7 +3,9 @@
 # Copyright (c) 2022, Shridhar Patil and contributors
 # For license information, please see license.txt
 import json
+from decimal import Decimal
 import frappe
+from frappe import _
 import magic
 import requests
 from frappe.model.document import Document
@@ -17,6 +19,28 @@ class WhatsAppTemplates(Document):  # nosemgrep: frappe-modifying-but-not-commit
 
     def validate(self):
         self.set_whatsapp_account()
+        template_type = self.get("template_type") or "Meta"
+
+        # Template body and Template Label are shared by both Meta and
+        # Evolution templates (used by CRM to render the message).
+        if not self.template:
+            frappe.throw(_("Template is required"))
+
+        if template_type != "Meta":
+            if self.has_builder_data():
+                self.template_payload = json.dumps(self._build_evolution_payload(), indent=2)
+
+            if not self.template_payload:
+                frappe.throw(_("Template Payload is required for Revolution interactive templates"))
+            try:
+                payload = json.loads(self.template_payload)
+            except (ValueError, TypeError):
+                frappe.throw(_("Template Payload must be valid JSON"))
+            self._validate_evolution_payload(payload)
+            return
+
+        if not self.language:
+            frappe.throw(_("Language is required for Meta templates"))
         if not self.language_code or self.has_value_changed("language"):
             lang_code = frappe.db.get_value("Language", self.language) or "en"
             self.language_code = lang_code.replace("-", "_")
@@ -27,6 +51,193 @@ class WhatsAppTemplates(Document):  # nosemgrep: frappe-modifying-but-not-commit
 
         if not self.is_new():
             self.update_template()
+
+    def before_insert(self):
+        # autoname (template_name-language_code) runs before validate(), so
+        # ensure a language code exists for Revolution interactive templates.
+        template_type = self.get("template_type") or "Meta"
+        if template_type != "Meta" and not self.language_code:
+            self.language_code = "en"
+
+    def has_builder_data(self):
+        """Whether any of the Evolution builder fields have content."""
+        return bool(
+            self.get("evo_buttons_title")
+            or self.get("evo_buttons_body")
+            or self.get("evo_buttons_footer")
+            or self.get("evo_list_title")
+            or self.get("evo_list_body")
+            or self.get("evo_list_footer")
+            or self.get("evo_carousel_title")
+            or self.get("evo_carousel_body")
+            or self.get("evo_carousel_footer")
+            or self.get("evo_button_text")
+            or self.get("evo_buttons")
+            or self.get("evo_sections")
+            or self.get("evo_cards")
+        )
+
+    def _build_evolution_payload(self):
+        """Build the Evolution payload dict from the builder fields.
+
+        One top-level key per enabled component (``buttons``, ``list``,
+        ``carousel``); sending one message per enabled component.
+        """
+        payload = {}
+        if self.get("evo_enable_buttons"):
+            payload["buttons"] = self._build_evo_buttons_payload()
+        if self.get("evo_enable_list"):
+            payload["list"] = self._build_evo_list_payload()
+        if self.get("evo_enable_carousel"):
+            payload["carousel"] = self._build_evo_carousel_payload()
+        return payload
+
+    def _build_evo_buttons_payload(self):
+        payload = {}
+        if self.get("evo_buttons_title"):
+            payload["title"] = self.evo_buttons_title
+        if self.get("evo_buttons_body"):
+            payload["description"] = self.evo_buttons_body
+        if self.get("evo_buttons_footer"):
+            payload["footer"] = self.evo_buttons_footer
+        payload["buttons"] = [self._build_evo_button(btn) for btn in self.get("evo_buttons") or []]
+        return payload
+
+    def _build_evo_list_payload(self):
+        payload = {}
+        if self.get("evo_list_title"):
+            payload["title"] = self.evo_list_title
+        if self.get("evo_list_body"):
+            payload["description"] = self.evo_list_body
+        if self.get("evo_list_footer"):
+            payload["footerText"] = self.evo_list_footer
+        if self.get("evo_button_text"):
+            payload["buttonText"] = self.evo_button_text
+        payload["sections"] = [
+            {
+                "title": section.title,
+                "rows": [
+                    self._build_evo_row(row)
+                    for row in self.get("evo_section_rows") or []
+                    if (row.get("section") or "") == section.title
+                ],
+            }
+            for section in self.get("evo_sections") or []
+        ]
+        return payload
+
+    def _build_evo_carousel_payload(self):
+        payload = {}
+        if self.get("evo_carousel_title"):
+            payload["title"] = self.evo_carousel_title
+        if self.get("evo_carousel_body"):
+            payload["body"] = self.evo_carousel_body
+        if self.get("evo_carousel_footer"):
+            payload["footerText"] = self.evo_carousel_footer
+        cards = []
+        for card in self.get("evo_cards") or []:
+            c = {"body": card.body}
+            if card.get("title"):
+                c["title"] = card.title
+            if card.get("footer"):
+                c["footer"] = card.footer
+            if card.get("image_url"):
+                c["imageUrl"] = card.image_url
+            if card.get("button_type"):
+                c["buttons"] = [self._build_evo_button(card)]
+            cards.append(c)
+        payload["cards"] = cards
+        return payload
+
+    @staticmethod
+    def _build_evo_button(btn):
+        """Map a button (builder row or JSON dict) to the Evolution API button shape."""
+        button = {
+            "type": (btn.get("button_type") or btn.get("type") or "reply").lower(),
+            "displayText": btn.get("display_text") or btn.get("displayText") or "",
+        }
+        for src, dst in (
+            ("id", "id"),
+            ("url", "url"),
+            ("phone_number", "phoneNumber"),
+            ("phoneNumber", "phoneNumber"),
+            ("copy_code", "copyCode"),
+            ("copyCode", "copyCode"),
+        ):
+            if btn.get(src):
+                button[dst] = btn.get(src)
+        return button
+
+    @staticmethod
+    def _build_evo_row(row):
+        """Map a row (builder row or JSON dict) to the Evolution API row shape."""
+        r = {
+            "title": row.get("title") or "",
+            "rowId": row.get("row_id") or row.get("rowId") or "",
+        }
+        if row.get("description"):
+            r["description"] = row.get("description")
+        return r
+
+    def _validate_evolution_payload(self, payload):
+        """Reject payloads that Evolution API's send* endpoints would reject."""
+        if not isinstance(payload, dict):
+            frappe.throw(_("Template Payload must be a JSON object"))
+
+        if payload.get("buttons"):
+            self._validate_buttons_component(payload["buttons"])
+        if payload.get("list"):
+            self._validate_list_component(payload["list"])
+        if payload.get("carousel"):
+            self._validate_carousel_component(payload["carousel"])
+
+    def _validate_buttons_component(self, payload):
+        buttons = payload.get("buttons")
+        if not isinstance(buttons, list) or not buttons:
+            frappe.throw(_("Buttons payload requires a non-empty \"buttons\" array"))
+        types = [b.get("type") for b in buttons if isinstance(b, dict)]
+        invalid = [t for t in types if t not in ("reply", "copy", "url", "call", "pix")]
+        if invalid:
+            frappe.throw(_("Invalid button type(s) in buttons payload: {0}. Valid types: reply, copy, url, call, pix").format(", ".join(map(str, invalid))))
+        has_reply = "reply" in types
+        has_cta = any(t in ("url", "call", "copy") for t in types)
+        has_pix = "pix" in types
+        if has_reply and (has_cta or has_pix):
+            frappe.throw(_("Reply buttons cannot be mixed with CTA (url/call/copy) or PIX buttons in the same message"))
+        if has_reply and len(buttons) > 3:
+            frappe.throw(_("Maximum of 3 reply buttons allowed"))
+        if has_pix and len(buttons) > 1:
+            frappe.throw(_("Only one PIX button is allowed and it cannot be mixed with other button types"))
+        if has_cta and not has_reply and len(buttons) > 2:
+            frappe.throw(_("Maximum of 2 CTA (url/call/copy) buttons allowed"))
+
+    def _validate_list_component(self, payload):
+        sections = payload.get("sections")
+        if not isinstance(sections, list) or not sections:
+            frappe.throw(_("List payload requires a non-empty \"sections\" array"))
+        titles = [s.get("title") for s in sections if isinstance(s, dict)]
+        if len(titles) != len(set(titles)):
+            frappe.throw(_("Section titles cannot be repeated in List payload"))
+        for s in sections:
+            if not isinstance(s.get("rows"), list) or not s.get("rows"):
+                frappe.throw(_("Section \"{0}\" requires at least one row").format(s.get("title")))
+
+    def _validate_carousel_component(self, payload):
+        cards = payload.get("cards")
+        if not isinstance(cards, list) or not cards or len(cards) > 10:
+            frappe.throw(_("Carousel payload requires 1 to 10 cards"))
+        for card in cards:
+            if not isinstance(card, dict) or not card.get("body"):
+                frappe.throw(_("Each carousel card requires a non-empty \"body\""))
+            if not card.get("imageUrl"):
+                frappe.throw(_("Each carousel card requires an Image URL — WhatsApp carousel cards must include media (image or video)"))
+            card_label = card.get("title") or card.get("body")
+            card_buttons = card.get("buttons")
+            if not isinstance(card_buttons, list) or not card_buttons or len(card_buttons) > 3:
+                frappe.throw(_("Card \"{0}\" has no buttons — set its Button Type and Display Text (or add buttons to the JSON)").format(card_label))
+            for b in card_buttons:
+                if not isinstance(b, dict) or b.get("type") not in ("reply", "copy", "url", "call"):
+                    frappe.throw(_("Card \"{0}\": button types must be reply, copy, url or call (PIX is not supported in carousel cards)").format(card_label))
 
     def set_whatsapp_account(self):
         """Set whatsapp account to default if missing"""
@@ -122,11 +333,23 @@ class WhatsAppTemplates(Document):  # nosemgrep: frappe-modifying-but-not-commit
 
     def after_insert(self):  # nosemgrep: frappe-modifying-but-not-committing -- self.actual_name/id/status are persisted via self.db_update() after the Meta round-trip; the static check can't trace through the API call
         # actual_name / id / status are persisted via self.db_update() below
-        # after the Meta round-trip; the static check can't trace that call.
+        # after the Meta round-trip; the static check can't tell that call.
         if self.template_name:
             self.actual_name = self.template_name.lower().replace(" ", "_")  # nosemgrep: frappe-modifying-but-not-committing
 
+        # Evolution interactive templates are sent directly via Evolution endpoints
+        # and do not need to be registered on Meta. Skip Meta settings/API calls.
+        template_type = self.get("template_type") or "Meta"
+        if template_type != "Meta":
+            self.id = ""
+            # Usable immediately (no Meta approval needed); CRM only lists
+            # templates with status APPROVED.
+            self.status = "APPROVED"
+            self.db_update()
+            return
+
         self.get_settings()
+
         data = {
             "name": self.actual_name,
             "language": self.language_code,
@@ -190,9 +413,23 @@ class WhatsAppTemplates(Document):  # nosemgrep: frappe-modifying-but-not-commit
                 msg=error_message,
                 title=res.get("error_user_title", "Error"),
             )
+            self.id = response["id"]  # nosemgrep: frappe-modifying-but-not-committing
+            self.status = response["status"]  # nosemgrep: frappe-modifying-but-not-committing
+            self.db_update()
+        except Exception as e:
+            res = frappe.flags.integration_request.json().get("error", {})
+            error_message = res.get("error_user_msg", res.get("message"))
+            frappe.throw(
+                msg=error_message,
+                title=res.get("error_user_title", "Error"),
+            )
 
     def update_template(self):
         """Update template to meta."""
+        template_type = self.get("template_type") or "Meta"
+        if template_type != "Meta":
+            return
+
         self.get_settings()
         data = {"components": []}
 
@@ -265,6 +502,9 @@ class WhatsAppTemplates(Document):  # nosemgrep: frappe-modifying-but-not-commit
         }
 
     def on_trash(self):
+        template_type = self.get("template_type") or "Meta"
+        if template_type != "Meta":
+            return
         self.get_settings()
         url = f"{self._url}/{self._version}/{self._business_id}/message_templates?name={self.actual_name}"
         try:
@@ -356,11 +596,11 @@ def fetch():
                     elif component["type"] == "BODY":
                         doc.template = component["text"]
                         if component.get("example"):
-    			            # Check if 'body_text' exists before trying to access it
+                            # Check if 'body_text' exists before trying to access it
                             if component["example"].get("body_text"):
                                 doc.sample_values = ",".join(
-            	                    component["example"]["body_text"][0]
-                    	        )
+                                    component["example"]["body_text"][0]
+                                )
 
                     # Update buttons
                     elif component["type"] == "BUTTONS":
@@ -422,6 +662,131 @@ def fetch():
             else:
                 # Handle cases where frappe.flags.integration_request doesn't exist or isn't a proper response object
                 frappe.throw(f"An unexpected server error occurred: {e}")
+
+@frappe.whitelist()
+def field_names_builder_data(for_doctype):
+    """Return the field tree of a doctype for the Field Names builder dialog."""
+    if not frappe.db.exists("DocType", for_doctype):
+        frappe.throw(_("DocType {0} does not exist").format(for_doctype))
+
+    SKIP = {
+        "Section Break", "Column Break", "Tab Break", "Button",
+        "HTML", "Image", "Heading", "Read Only",
+    }
+
+    def clean_fields(meta):
+        return [
+            {
+                "fieldname": df.fieldname,
+                "label": df.label or df.fieldname,
+                "fieldtype": df.fieldtype,
+                "options": df.options,
+            }
+            for df in meta.fields
+            if df.fieldname and df.fieldtype not in SKIP
+        ]
+
+    meta = frappe.get_meta(for_doctype)
+    fields = []
+    for df in meta.fields:
+        if not df.fieldname or df.fieldtype in SKIP:
+            continue
+        entry = {
+            "fieldname": df.fieldname,
+            "label": df.label or df.fieldname,
+            "fieldtype": df.fieldtype,
+            "options": df.options,
+        }
+        if df.fieldtype == "Table" and df.options:
+            child_meta = frappe.get_meta(df.options)
+            entry["child_doctype"] = df.options
+            entry["child_fields"] = clean_fields(child_meta)
+        fields.append(entry)
+    return fields
+
+
+@frappe.whitelist()
+def field_path_values(for_doctype, fieldname, child_doctype=None, txt=None):
+    """Distinct existing values of a field, for the Where Value autocomplete."""
+    doctype = child_doctype or for_doctype
+    if not frappe.db.exists("DocType", doctype):
+        frappe.throw(_("DocType {0} does not exist").format(doctype))
+
+    table = frappe.qb.DocType(doctype)
+    column = frappe.qb.Field(fieldname)
+    query = frappe.qb.from_(table).select(column).distinct().where(column.isnotnull())
+    if txt:
+        query = query.where(column.like("%{0}%".format(txt)))
+    rows = query.limit(25).run()
+    return [r[0] for r in rows]
+
+
+@frappe.whitelist()
+def preview_field_path(for_doctype, path):
+    """Resolve a field path against the latest record of the doctype (or the reference record).
+
+    Returns ``{"value": ..., "record": ..., "error": ...}`` for the
+    builder's live preview. ``path`` may be any supported field path,
+    e.g. ``items[0].rate``, ``Item Price[item_code=ELEC-001].price_list_rate``
+    or ``=literal``.
+    """
+    if not frappe.db.exists("DocType", for_doctype):
+        frappe.throw(_("DocType {0} does not exist").format(for_doctype))
+
+    record = frappe.db.get_value(for_doctype, filters={}, fieldname="name", order_by="modified desc")
+    if not record:
+        return {"value": None, "record": None, "error": _("No records found for {0}").format(for_doctype)}
+    try:
+        ref_doc = frappe.get_doc(for_doctype, record)
+        wm = frappe.new_doc("WhatsApp Message")
+        value = wm._resolve_field_path(ref_doc, path)
+        return {"value": _json_safe(value), "record": record}
+    except Exception as e:
+        return {"value": None, "record": record, "error": str(e)}
+
+
+def _json_safe(value):
+    """Make resolver values JSON-safe for the whitelist response."""
+    if isinstance(value, frappe.model.document.Document):
+        return {"__doc": value.name}
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    return value
+
+
+@frappe.whitelist()
+def build_payload(doc):
+    """Build the Evolution template payload JSON from the builder fields.
+
+    ``doc`` is the unsaved form document (fields only). Returns the
+    generated JSON string, ready to be stored in ``template_payload``.
+    """
+    if isinstance(doc, str):
+        doc = json.loads(doc)
+
+    d = frappe.new_doc("WhatsApp Templates")
+    for key, value in (doc or {}).items():
+        if key in {"doctype", "name", "__islocal", "__onload", "__unsaved"}:
+            continue
+        if key in {"evo_buttons", "evo_sections", "evo_cards", "evo_section_rows"}:
+            continue
+        try:
+            setattr(d, key, value)
+        except Exception:
+            pass
+
+    d.set("evo_buttons", [frappe._dict(r) for r in (doc or {}).get("evo_buttons") or []])
+    d.set("evo_sections", [frappe._dict(r) for r in (doc or {}).get("evo_sections") or []])
+    d.set("evo_cards", [frappe._dict(r) for r in (doc or {}).get("evo_cards") or []])
+    d.set("evo_section_rows", [frappe._dict(r) for r in (doc or {}).get("evo_section_rows") or []])
+
+    payload = d._build_evolution_payload()
+    if not payload:
+        frappe.throw(_("Enable at least one component (Send Buttons / Send List / Send Carousel) and fill its fields"))
+    d._validate_evolution_payload(payload)
+    return json.dumps(payload, indent=2)
 
 def upsert_doc_without_hooks(doc, child_dt, child_field):
     """Insert or update a parent document and its children without hooks."""

@@ -1,0 +1,101 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "body",
+  "footer",
+  "image_url",
+  "button_type",
+  "display_text",
+  "id",
+  "url",
+  "phone_number",
+  "copy_code"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title"
+  },
+  {
+   "fieldname": "body",
+   "fieldtype": "Text",
+   "in_list_view": 1,
+   "label": "Body",
+   "reqd": 1
+  },
+  {
+   "fieldname": "footer",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Footer"
+  },
+  {
+   "fieldname": "image_url",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Image URL"
+  },
+   {
+    "fieldname": "button_type",
+    "fieldtype": "Select",
+    "in_list_view": 1,
+    "label": "Button Type",
+    "options": "\nReply\nCopy\nURL\nCall",
+    "reqd": 1
+   },
+   {
+    "fieldname": "display_text",
+    "fieldtype": "Data",
+    "in_list_view": 1,
+    "label": "Display Text",
+    "reqd": 1
+   },
+   {
+    "depends_on": "eval:doc.button_type == \"Reply\"",
+    "description": "Identifier returned when the button is pressed",
+    "fieldname": "id",
+    "fieldtype": "Data",
+    "label": "Button ID"
+   },
+   {
+    "depends_on": "eval:doc.button_type == \"URL\"",
+    "fieldname": "url",
+    "fieldtype": "Data",
+    "label": "URL"
+   },
+   {
+    "depends_on": "eval:doc.button_type == \"Call\"",
+    "fieldname": "phone_number",
+    "fieldtype": "Data",
+    "label": "Phone Number"
+   },
+   {
+    "depends_on": "eval:doc.button_type == \"Copy\"",
+    "fieldname": "copy_code",
+    "fieldtype": "Data",
+    "label": "Copy Code"
+   }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-05 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Frappe Whatsapp",
+ "name": "WhatsApp Evo Card",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

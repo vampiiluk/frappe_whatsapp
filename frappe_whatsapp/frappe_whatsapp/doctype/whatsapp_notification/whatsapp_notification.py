@@ -258,6 +258,11 @@ class WhatsAppNotification(Document):
         if not whatsapp_account:
             frappe.throw(_("Please set a default outgoing WhatsApp Account"))
 
+        from frappe_whatsapp.utils.evolution_client import is_evolution_account
+
+        if is_evolution_account(whatsapp_account):
+            return self.notify_evolution(data, doc_data, whatsapp_account)
+
         token = whatsapp_account.get_password("token")
 
         headers = {
@@ -343,6 +348,179 @@ class WhatsAppNotification(Document):
     def on_trash(self):
         """On delete remove from schedule."""
         frappe.cache().delete_value("whatsapp_notification_map")
+
+
+    def notify_evolution(self, data, doc_data=None, whatsapp_account=None):
+        """Send a template as a plain text message via the Evolution API.
+
+        The Evolution API does not support Meta templates, so the template
+        body + parameters are rendered as a plain text message. The result
+        is still logged as a Template WhatsApp Message so the message log
+        stays consistent with the Meta path.
+        """
+        from frappe_whatsapp.utils.evolution_client import EvolutionAPIClient, get_message_id
+
+        client = EvolutionAPIClient(whatsapp_account)
+        success = False
+        error_message = None
+        response = None
+
+        try:
+            template = frappe.get_doc("WhatsApp Templates", self.template)
+            parameters = self.get_template_parameters(data)
+            message = self.render_template_text(template, parameters)
+
+            media_url = self.resolve_media_url(doc_data)
+            from frappe_whatsapp.utils.evolution_client import media_to_base64
+
+            header_type = template.get("header_type") or ""
+            if header_type == "IMAGE" and media_url:
+                response = client.send_media(
+                    to=data["to"], media=media_to_base64(media_url), mediatype="image",
+                    mimetype="", filename="image", caption=message,
+                )
+            elif header_type == "DOCUMENT" and media_url:
+                response = client.send_media(
+                    to=data["to"], media=media_to_base64(media_url), mediatype="document",
+                    mimetype="", filename="document", caption=message,
+                )
+            else:
+                response = client.send_text(to=data["to"], message=message)
+
+            message_id = get_message_id(response)
+
+            if not self.get("content_type"):
+                self.content_type = 'text'
+
+            new_doc = {
+                "doctype": "WhatsApp Message",
+                "type": "Outgoing",
+                "message": message,
+                "to": data['to'],
+                "message_type": "Template",
+                "message_id": message_id,
+                "content_type": self.content_type,
+                "use_template": 1,
+                "template": self.template,
+                "template_parameters": frappe.json.dumps(parameters, default=str),
+                "whatsapp_account": whatsapp_account.name,
+            }
+
+            if doc_data:
+                new_doc.update({
+                    "reference_doctype": doc_data.doctype,
+                    "reference_name": doc_data.name,
+                })
+
+            doc = frappe.get_doc(new_doc)
+            doc.flags.ignore_send = True
+            doc.insert(ignore_permissions=True)
+
+            if doc_data and self.set_property_after_alert and self.property_value:
+                if doc_data.doctype and doc_data.name:
+                    fieldname = self.set_property_after_alert
+                    value = self.property_value
+                    meta = frappe.get_meta(doc_data.get("doctype"))
+                    df = meta.get_field(fieldname)
+                    if df:
+                        if df.fieldtype in frappe.model.numeric_fieldtypes:
+                            value = frappe.utils.cint(value)
+
+                        frappe.db.set_value(doc_data.get("doctype"), doc_data.get("name"), fieldname, value)
+
+            frappe.msgprint("WhatsApp Message Triggered", indicator="green", alert=True)
+            success = True
+
+        except Exception as e:
+            error_message = str(e)
+            frappe.msgprint(
+                f"Failed to trigger whatsapp message: {error_message}",
+                indicator="red",
+                alert=True
+            )
+        finally:
+            if not success:
+                meta = {"error": error_message}
+            else:
+                meta = {"response": response}
+            frappe.get_doc({
+                "doctype": "WhatsApp Notification Log",
+                "template": self.template,
+                "meta_data": meta
+            }).insert(ignore_permissions=True)
+
+    def get_template_parameters(self, data):
+        """Extract the body text parameters from a Meta template payload."""
+        parameters = []
+        components = (data.get("template") or {}).get("components") or []
+        for component in components:
+            if component.get("type") == "body":
+                parameters = [param.get("text") for param in component.get("parameters") or []]
+                break
+        return parameters
+
+    def render_template_text(self, template, parameters):
+        """Substitute {{n}} placeholders in the template text with parameter values."""
+        def fill(text):
+            for idx, param in enumerate(parameters, start=1):
+                text = text.replace("{{%s}}" % idx, str(param or ""))
+            return text
+
+        parts = []
+        if template.get("header_type") == "TEXT" and template.get("header"):
+            parts.append(fill(template.header))
+        parts.append(fill(template.get("template") or ""))
+        if template.get("footer"):
+            parts.append(template.footer)
+        return "\n".join(part for part in parts if part)
+
+    def resolve_media_url(self, doc_data):
+        """Resolve a printable/attached media URL for a template media header."""
+        url = None
+        if self.attach_document_print and doc_data:
+            print_format = "Standard"
+            doctype = frappe.get_doc("DocType", doc_data['doctype'])
+            if doctype.custom:
+                if doctype.default_print_format:
+                    print_format = doctype.default_print_format
+            else:
+                default_print_format = frappe.db.get_value(
+                    "Property Setter",
+                    filters={
+                        "doc_type": doc_data['doctype'],
+                        "property": "default_print_format"
+                    },
+                    fieldname="value"
+                )
+                print_format = default_print_format if default_print_format else print_format
+
+            link = get_pdf_link(doc_data['doctype'], doc_data['name'], print_format=print_format)
+            url = f'{frappe.utils.get_url()}{link}'
+
+            try:
+                doc = frappe.get_doc(doc_data['doctype'], doc_data['name'])
+                key = doc.get_document_share_key()
+                url = f'{url}&key={key}'
+            except Exception:
+                pass
+
+        elif self.custom_attachment:
+            if self.attach_from_field and doc_data:
+                file_url = doc_data[self.attach_from_field]
+                if not file_url.startswith("http"):
+                    file_url = f'{frappe.utils.get_url()}{file_url}'
+                    try:
+                        doc = frappe.get_doc(doc_data['doctype'], doc_data['name'])
+                        key = doc.get_document_share_key()
+                        file_url = f'{file_url}&key={key}'
+                    except Exception:
+                        pass
+            else:
+                file_url = self.attach
+
+            url = file_url if file_url.startswith("http") else f'{frappe.utils.get_url()}{file_url}'
+
+        return url
 
 
     def format_number(self, number):

@@ -4,7 +4,7 @@
 frappe.ui.form.on('WhatsApp Message', {
 	onload: function(frm) {
 		frappe.db.get_value('WhatsApp Account', frm.doc.whatsapp_account, 'allow_auto_read_receipt').then(value => {
-			if (value && frm.doc.type === "Incoming" && frm.doc.status !== "marked as read" && frm.doc.message_id) {
+			if (value && frm.doc.type === "Incoming" && frm.doc.status !== "read" && frm.doc.message_id) {
 				send_read_receipt(frm);
 			}
 		});
@@ -24,7 +24,7 @@ frappe.ui.form.on('WhatsApp Message', {
 
 // custom button
 function add_mark_as_read(frm){
-	if(frm.doc.type === "Outgoing" || frm.doc.status == "marked as read" || !frm.doc.message_id)
+	if(frm.doc.type === "Outgoing" || frm.doc.status == "read" || !frm.doc.message_id)
 		return
 	
 	frappe.db.get_value('WhatsApp Account', frm.doc.whatsapp_account, 'allow_auto_read_receipt').then(value => {
