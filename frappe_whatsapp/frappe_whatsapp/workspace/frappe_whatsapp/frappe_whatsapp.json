@@ -354,8 +354,8 @@
    "color": "Cyan",
    "doc_view": "List",
    "icon": "message-circle",
-   "label": "WhatsApp Chat",
-   "link_to": "WhatsApp Chat",
+   "label": "WhatsApp Session Message",
+   "link_to": "WhatsApp Session Message",
    "type": "DocType"
   },
   {
