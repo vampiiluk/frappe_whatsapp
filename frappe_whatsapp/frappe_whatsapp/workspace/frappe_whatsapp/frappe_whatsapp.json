@@ -1,7 +1,7 @@
 {
  "actions": [],
  "charts": [],
- "content": "[{\"id\": \"wa-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>WhatsApp</b></span>\", \"col\": 12}}, {\"id\": \"wa-sc1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Account\", \"col\": 3}}, {\"id\": \"wa-sc2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Session Message\", \"col\": 3}}, {\"id\": \"wa-sc3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Message\", \"col\": 3}}, {\"id\": \"wa-sc4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Settings\", \"col\": 3}}, {\"id\": \"wa-me-mes\", \"type\": \"card\", \"data\": {\"card_name\": \"Messaging\", \"col\": 4}}, {\"id\": \"wa-ch-flo\", \"type\": \"card\", \"data\": {\"card_name\": \"Chatbot & Flow\", \"col\": 4}}, {\"id\": \"wa-te-tem\", \"type\": \"card\", \"data\": {\"card_name\": \"Templates\", \"col\": 4}}, {\"id\": \"wa-co-con\", \"type\": \"card\", \"data\": {\"card_name\": \"Configuration\", \"col\": 4}}, {\"id\": \"wa-re-rep\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+ "content": "[{\"id\": \"wa-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>WhatsApp</b></span>\", \"col\": 12}}, {\"id\": \"wa-sc1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Account\", \"col\": 3}}, {\"id\": \"wa-sc2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Templates\", \"col\": 3}}, {\"id\": \"wa-sc3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Message\", \"col\": 3}}, {\"id\": \"wa-sc4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Settings\", \"col\": 3}}, {\"id\": \"wa-me-mes\", \"type\": \"card\", \"data\": {\"card_name\": \"Messaging\", \"col\": 4}}, {\"id\": \"wa-ch-flo\", \"type\": \"card\", \"data\": {\"card_name\": \"Chatbot & Flow\", \"col\": 4}}, {\"id\": \"wa-co-con\", \"type\": \"card\", \"data\": {\"card_name\": \"Configuration\", \"col\": 4}}, {\"id\": \"wa-re-rep\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
  "creation": "2026-08-15 14:10:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -175,47 +175,6 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Templates",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "WhatsApp Templates",
-   "link_count": 0,
-   "link_to": "WhatsApp Templates",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "WhatsApp Button",
-   "link_count": 0,
-   "link_to": "WhatsApp Button",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "WhatsApp Flow Screen",
-   "link_count": 0,
-   "link_to": "WhatsApp Flow Screen",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "Configuration",
    "link_count": 0,
    "onboard": 0,
@@ -351,11 +310,11 @@
    "type": "DocType"
   },
   {
-   "color": "Cyan",
+   "color": "Purple",
    "doc_view": "List",
-   "icon": "message-circle",
-   "label": "WhatsApp Session Message",
-   "link_to": "WhatsApp Session Message",
+   "icon": "file-text",
+   "label": "WhatsApp Templates",
+   "link_to": "WhatsApp Templates",
    "type": "DocType"
   },
   {
