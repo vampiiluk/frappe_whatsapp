@@ -1,0 +1,133 @@
+{
+ "app": "frappe_whatsapp",
+ "content": "[{\"id\": \"hdr1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"wsc1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Message\", \"col\": 4}}, {\"id\": \"wsc2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Contact\", \"col\": 4}}, {\"id\": \"wsc3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Bulk WhatsApp Message\", \"col\": 4}}, {\"id\": \"wsc4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Templates\", \"col\": 4}}, {\"id\": \"wsc5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Chatbot\", \"col\": 4}}, {\"id\": \"wsc6\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Flow\", \"col\": 4}}, {\"id\": \"wsc7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Keyword Reply\", \"col\": 4}}, {\"id\": \"wsc8\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Business Hours\", \"col\": 4}}, {\"id\": \"wsc9\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Account\", \"col\": 4}}, {\"id\": \"wsc10\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Settings\", \"col\": 4}}, {\"id\": \"wsc11\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Notification\", \"col\": 4}}, {\"id\": \"wsc12\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Bulk WhatsApp Status\", \"col\": 4}}]",
+ "creation": "2026-08-05 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "messages-square",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Frappe Whatsapp",
+ "links": [],
+ "modified": "2026-08-05 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Frappe Whatsapp",
+ "name": "Frappe Whatsapp",
+ "owner": "Administrator",
+ "public": 1,
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "icon": "message-square",
+   "label": "WhatsApp Message",
+   "link_to": "WhatsApp Message",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "icon": "contact",
+   "label": "WhatsApp Contact",
+   "link_to": "WhatsApp Contact",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Cyan",
+   "doc_view": "List",
+   "icon": "send",
+   "label": "Bulk WhatsApp Message",
+   "link_to": "Bulk WhatsApp Message",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "List",
+   "icon": "layout-template",
+   "label": "WhatsApp Templates",
+   "link_to": "WhatsApp Templates",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "icon": "bot",
+   "label": "WhatsApp Chatbot",
+   "link_to": "WhatsApp Chatbot",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Cyan",
+   "doc_view": "List",
+   "icon": "workflow",
+   "label": "WhatsApp Flow",
+   "link_to": "WhatsApp Flow",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "icon": "key-round",
+   "label": "WhatsApp Keyword Reply",
+   "link_to": "WhatsApp Keyword Reply",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "icon": "clock",
+   "label": "WhatsApp Business Hours",
+   "link_to": "WhatsApp Business Hours",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "icon": "user-round",
+   "label": "WhatsApp Account",
+   "link_to": "WhatsApp Account",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "icon": "settings",
+   "label": "WhatsApp Settings",
+   "link_to": "WhatsApp Settings",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "icon": "bell",
+   "label": "WhatsApp Notification",
+   "link_to": "WhatsApp Notification",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "Report Builder",
+   "icon": "clipboard-check",
+   "label": "Bulk WhatsApp Status",
+   "link_to": "Bulk WhatsApp Status",
+   "stats_filter": "[]",
+   "type": "Report"
+  }
+ ],
+ "title": "Frappe Whatsapp"
+}
