@@ -13,4 +13,35 @@ def after_install():
 
 	create_workspace_sidebar_for_workspaces()
 	create_desktop_icons_from_workspace()
+	setup_desktop_icon()
 	frappe.db.commit()
+
+
+def setup_desktop_icon():
+	"""Link the Frappe Whatsapp Desktop Icon record to the frappe_whatsapp app so the
+	desk renders the app icon (assets/frappe_whatsapp/icons/desktop_icons/...) instead
+	of falling back to the label's initial letter."""
+	try:
+		if frappe.db.exists("Desktop Icon", "Frappe Whatsapp"):
+			if frappe.db.get_value("Desktop Icon", "Frappe Whatsapp", "app") != "frappe_whatsapp":
+				frappe.db.set_value(
+					"Desktop Icon", "Frappe Whatsapp", "app", "frappe_whatsapp", update_modified=False
+				)
+		else:
+			frappe.get_doc(
+				{
+					"doctype": "Desktop Icon",
+					"label": "Frappe Whatsapp",
+					"icon_type": "Link",
+					"link_type": "Workspace Sidebar",
+					"link_to": "Frappe Whatsapp",
+					"icon": "message-square",
+					"app": "frappe_whatsapp",
+					"standard": 0,
+					"hidden": 0,
+					"restrict_removal": 0,
+					"bg_color": "gray",
+				}
+			).insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(title="Desktop Icon Setup Error", message=frappe.get_traceback())
