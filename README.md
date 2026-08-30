@@ -21,6 +21,44 @@ WhatsApp integration for Frappe/ERPNext. Use Meta's WhatsApp Cloud API directly 
 
 > **Note:** If you're not using live credentials, follow [step no 2](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started) to add the number on Meta to which you are sending messages.
 
+## What's New in This Fork
+
+> This is the **vampiiluk/frappe_whatsapp** fork of Frappe WhatsApp. The
+> upstream Meta Cloud API integration is fully intact; this fork **adds an
+> Evolution API provider layer** so you can use any Evolution API instance
+> instead of (or alongside) Meta.
+
+- **Evolution API provider:** a full client (`EvolutionAPIClient`) sends text,
+  media, buttons, lists and carousels, manages instances and QR pairing, sets
+  webhooks, downloads media and marks messages read — coexisting with the Meta
+  Cloud API path.
+- **Multi-provider accounts:** each WhatsApp Account is a Meta Cloud API or an
+  Evolution account, with provider-specific fields shown only when relevant.
+- **Connection management from the form:** "Test Connection", "Reconnect
+  Instance", "Get QR Code" (renders the QR + pairing code) and "Configure
+  Webhook" buttons right on the WhatsApp Account form; the webhook secret is
+  auto-generated and the URL auto-filled.
+- **Secret-authenticated webhook:** the Evolution webhook verifies a `?token=`
+  against the account secret and can point at a host reachable inside your
+  Docker network (`evolution_api_webhook_url` site config).
+- **Complete conversation mirroring:** every inbound message is accepted
+  (unlike the reference app's update-only constraint) and outbound messages
+  are mirrored too, with a retry window to avoid duplicates.
+- **Delivery status & auto-reconnect:** `MESSAGES_UPDATE` statuses map to
+  sent/delivered/read/played, and connection drops trigger a rate-limited
+  best-effort reconnect.
+- **Media as real attachments:** inbound image/video/document/audio is
+  downloaded via the Evolution API and stored as a Frappe `File`; outbound
+  media is sent as raw base64 because the container can't read local files.
+- **Read receipts from the CRM:** whitelisted API flips unread incoming
+  messages to "read" and notifies the sender.
+- **"Revolution" interactive templates:** a visual template builder supporting
+  buttons, lists and carousels (Reply/Copy/URL/Call/PIX button types) with new
+  child doctypes, plus template-driven Evolution sending from WhatsApp Message
+  and WhatsApp Notification.
+- **Packaged workspace, sidebar and app icon:** installed automatically on
+  install/migrate.
+
 ## Features
 
 - **Multi-Account Support** - Manage multiple WhatsApp Business accounts
